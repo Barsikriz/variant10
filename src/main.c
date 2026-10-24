@@ -1,6 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>
+#include <shellapi.h>
+#include "config.h"
 #include <stdlib.h>
 #include <wchar.h>
 #include "shell.h"
@@ -145,6 +147,15 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LP
     }
 }
 
+static void show_config(const Config *config)
+{
+    append_output(L"[config] vfs = ");
+    append_output(config->vfs_path ? config->vfs_path : L"(не задан)");
+    append_output(L"\r\n[config] script = ");
+    append_output(config->script_path ? config->script_path : L"(не задан)");
+    append_output(L"\r\n");
+}
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, int show)
 {
     (void)previous;
@@ -170,6 +181,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
         show_error(NULL, L"Не удалось создать окно.");
         return EXIT_FAILURE;
     }
+    int argc = 0;
+    wchar_t **argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    Config config;
+    const wchar_t *error = NULL;
+    if (!argv || !config_parse(argc, argv, &config, &error)) {
+        show_error(window, error ? error : L"Не удалось прочитать параметры запуска.");
+        LocalFree(argv);
+        DestroyWindow(window);
+        return EXIT_FAILURE;
+    }
+    show_config(&config);
+    LocalFree(argv);
     ShowWindow(window, show);
     UpdateWindow(window);
     MSG message;
