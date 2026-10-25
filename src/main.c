@@ -3,6 +3,7 @@
 #include <windowsx.h>
 #include <shellapi.h>
 #include "config.h"
+#include "script.h"
 #include <stdlib.h>
 #include <wchar.h>
 #include "shell.h"
@@ -192,9 +193,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
         return EXIT_FAILURE;
     }
     show_config(&config);
-    LocalFree(argv);
     ShowWindow(window, show);
     UpdateWindow(window);
+    ShellResult script_result = config.script_path
+        ? script_run_file(config.script_path, append_output) : SHELL_OK;
+    LocalFree(argv);
+    if (script_result == SHELL_EXIT) {
+        DestroyWindow(window);
+        return EXIT_SUCCESS;
+    }
     MSG message;
     int status;
     while ((status = (int)GetMessageW(&message, NULL, 0, 0)) > 0) {

@@ -15,7 +15,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
     } else {
         & gcc -std=c11 -Wall -Wextra -Werror -DUNICODE -D_UNICODE -municode -mwindows `
-            src/main.c src/shell.c src/config.c -o build/emulator.exe -luser32 -lgdi32 -ladvapi32 -lshell32
+            src/main.c src/shell.c src/config.c src/script.c src/script_file.c `
+            -o build/emulator.exe -luser32 -lgdi32 -ladvapi32 -lshell32
         if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
         if (-not $BuildOnly) {
             $launchArgs = @()
