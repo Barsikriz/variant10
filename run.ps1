@@ -13,6 +13,11 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Test build failed.' }
         & .\build\test_shell.exe
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+        & gcc -std=c11 -Wall -Wextra -Werror -Isrc tests/test_config_script.c `
+            src/config.c src/script.c src/shell.c -o build/test_config_script.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Config test build failed.' }
+        & .\build\test_config_script.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Config tests failed.' }
     } else {
         & gcc -std=c11 -Wall -Wextra -Werror -DUNICODE -D_UNICODE -municode -mwindows `
             src/main.c src/shell.c src/config.c src/script.c src/script_file.c `
