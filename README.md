@@ -1,110 +1,111 @@
-# Эмулятор оболочки ОС — вариант 10
+# OS shell emulator - Variant 10
 
-## Общее описание
+## Overview
 
-Этапы 1–2. REPL на языке C с графическим интерфейсом Win32 API для Windows.
-Заголовок `Эмулятор - [username@hostname]` содержит реальные имя пользователя
-и имя компьютера. Внизу окна находится поле ввода, выше — журнал команд.
-Команда выполняется по Enter или кнопке «Выполнить».
+A C application with a native Win32 GUI implementing stages 1-3.
+The title contains the real Windows user name and computer name.
+Enter commands in the input field and press Enter or click the button.
+The output area displays commands, results and errors.
 
-## Функции и настройки
+## Commands and configuration
 
-Парсер разделяет ввод на команду и аргументы по пробелам, пропуская
-повторяющиеся, начальные и конечные пробелы. Кавычки и переменные
-окружения отдельно не обрабатываются. Пустая строка не выполняет команду.
-Все строки обрабатываются как `wchar_t`, интерфейс использует Unicode-функции Windows.
-
-| Команда | Поведение |
+| Command | Behavior |
 | --- | --- |
-| `ls [аргументы]` | Выводит имя команды и аргументы; заглушка. |
-| `cd [аргументы]` | Выводит имя команды и аргументы; заглушка. |
-| `exit` | Закрывает окно. |
+| `ls [arguments]` | Prints its name and arguments (stub). |
+| `cd [arguments]` | Prints its name and arguments (stub). |
+| `exit` | Closes the application; arguments are rejected. |
 
-Неизвестная команда и аргументы у `exit` вызывают сообщение об ошибке.
-После ошибки ввод можно продолжить. Окно также закрывается штатной кнопкой.
-Параметры запуска: `--vfs PATH` — путь к VFS, `--script PATH` — путь к стартовому скрипту.
-Оба параметра необязательны. Значения выводятся в журнале при запуске.
-Неизвестные параметры, повторы и пропущенные значения вызывают ошибку запуска.
-Пути с пробелами передаются в кавычках. VFS ещё не загружается.
-Стартовый скрипт — текст UTF-8 (допустим BOM), одна команда на строку.
-Поддерживаются LF, CRLF и CR. В журнал выводятся ввод и результат каждой команды.
-Ошибочные команды пропускаются с указанием номера строки; выполнение продолжается.
-`exit` закрывает приложение и прекращает выполнение оставшихся строк.
-После окончания скрипта или ошибки чтения доступен интерактивный ввод.
-Файл должен быть доступен для чтения, не содержать NUL и иметь размер не более 16 МиБ.
-Комментарии в стартовом скрипте не поддерживаются.
-`config_parse` проверяет аргументы; `show_config` выводит настройки.
+The command parser splits input on spaces and ignores repeated spaces.
+Quotes and environment variables have no special meaning inside commands.
+Empty input does nothing. Unknown commands report errors without ending the session.
+Actual `ls` and `cd` operations belong to stage 4.
 
-### Функции исходного кода
-
-| Функция | Назначение |
+| Launch option | Meaning |
 | --- | --- |
-| `copy_text` | Копирует строку с выделением памяти. |
-| `message` | Создаёт строку ответа и возвращает статус. |
-| `next_token` | Выделяет следующий токен по пробелам. |
-| `shell_execute` | Разбирает и выполняет команду, возвращает статус и строку ответа. |
-| `show_error` | Показывает окно с сообщением об ошибке. |
-| `make_title` | Получает данные через `GetUserNameW` и `GetComputerNameW`, формирует заголовок. |
-| `append_output` | Добавляет текст в журнал и прокручивает его вниз. |
-| `submit_command` | Читает ввод, показывает результат, очищает поле и обрабатывает `exit`. |
-| `input_proc` | Обрабатывает Enter в поле ввода. |
-| `create_controls` | Создаёт журнал, поле ввода и кнопку. |
-| `resize_controls` | Располагает элементы при изменении размера окна. |
-| `window_proc` | Обрабатывает сообщения главного окна. |
-| `wWinMain` | Создаёт окно и запускает цикл сообщений Windows. |
-| `check_command` | Проверяет статус и ответ команды в тестах. |
-| `main` в тестах | Запускает проверки команд. |
+| `--vfs PATH` | Directory copied into an in-memory VFS at startup. |
+| `--script PATH` | Startup script to execute after VFS initialization. |
 
-Ответ `shell_execute` вызывающий код освобождает через `free`.
-При нехватке памяти ответ может быть `NULL`, возвращается `SHELL_ERROR`.
-Максимальная длина ввода в GUI — 65535 кодовых единиц UTF-16.
+Both options are optional. Without `--vfs`, the VFS contains only an empty root directory.
+Without `--script`, the application enters interactive mode immediately.
+Paths with spaces must be quoted in the Windows command line.
+Both settings are printed at startup. Unknown options, duplicate options and missing values are errors.
+Relative paths are resolved against the process working directory.
 
-`load_script` читает файл и преобразует UTF-8 в Unicode.
-`script_run_file` загружает файл, сообщает об ошибке и запускает выполнение.
-`script_run_text` обрабатывает строки и выводит результаты через функцию обратного вызова.
+Startup scripts use UTF-8 with an optional BOM and one command per line.
+LF, CRLF and CR line endings are accepted. Each command and its output are displayed.
+Invalid commands report a line number and are skipped; following commands still execute.
+`exit` stops the script and closes the window. After script completion or a read error,
+the interactive session remains available. Comments are not supported.
+Script files must contain no NUL bytes and must not exceed 16 MiB.
 
-## Сборка и запуск тестов
+### VFS
 
-Требуются Windows и MinGW-w64 (gcc в PATH). В PowerShell из корня проекта:
+The source directory is read once at startup. Directory names, virtual paths and all file bytes
+are kept in memory, including empty files, empty directories and binary files.
+Virtual paths use `/` and are case-sensitive. The root has the path `/`.
+A startup message reports the number of loaded nodes (including root) and file bytes.
+No source files are created, overwritten, extracted or deleted by the emulator.
+An invalid or unreadable source causes a startup error; a partial VFS is discarded.
+Symbolic links and other Windows reparse points are rejected.
+Limits: 64 MiB per file, 256 MiB total file content, 100000 nodes and 128 directory-entry levels.
+These limits and allocation failures cause a load error.
 
-```powershell
-.\run.ps1 -BuildOnly
-.\run.ps1 -Test
-.\run.ps1 -VfsPath "C:\VFS folder" -ScriptPath "start.txt"
-```
+## Functions
 
-`run.ps1` собирает и запускает приложение. `-BuildOnly` выполняет только сборку,
-`-Test` запускает тесты, `-VfsPath` и `-ScriptPath` передают параметры эмулятору.
-При запрете выполнения локальных скриптов можно вызвать:
+| Function | Purpose |
+| --- | --- |
+| `copy_text`, `message` | Allocate command response strings and return a status. |
+| `next_token`, `shell_execute` | Parse and execute a command. The caller frees the response. |
+| `config_parse`, `show_config` | Validate launch options and print settings. |
+| `load_script` | Read a UTF-8 script through the Windows API. |
+| `script_run_file`, `script_run_text` | Execute scripts and report line errors. |
+| `make_title`, `show_error` | Build the window title and display error dialogs. |
+| `append_output`, `submit_command` | Display output and process interactive input. |
+| `input_proc`, `window_proc` | Handle keyboard input and window messages. |
+| `create_controls`, `resize_controls` | Create and arrange GUI controls. |
+| `wWinMain` | Initialize the application, load VFS, execute a script and run the message loop. |
+| `vfs_add` | Copy a directory entry or file bytes into the VFS. |
+| `vfs_find` | Look up an exact virtual path in memory. |
+| `vfs_free` | Release all VFS memory. |
+| `join_path` | Join physical or virtual path components. |
+| `load_file`, `load_directory`, `load_entry` | Read source files and recursively traverse directories. |
+| `vfs_load` | Load a complete VFS; preserve the previous VFS if loading fails. |
+| `check_command`, `check_config`, `check_script` | Test commands, configuration and script execution. |
+| `capture` | Collect script output for assertions. |
+| Test `main` functions | Run test suites. |
+
+The VFS must be zero-initialized before its first use. `vfs_find` returns a borrowed pointer
+valid until the VFS is freed or replaced. Command output can be NULL on allocation failure.
+The GUI input limit is 65535 UTF-16 code units.
+
+## Build and tests
+
+Requires Windows and MinGW-w64 with `gcc` available in PATH.
+Run the following commands in PowerShell from the project root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\run.ps1 -BuildOnly
+powershell -ExecutionPolicy Bypass -File .\run.ps1 -Test
+.\build\emulator.exe --vfs "C:\My VFS" --script "tests\fixtures\start.txt"
 ```
 
-Альтернативно `run.bat` и `run.bat test` работают в Native Tools Command Prompt
-с MSVC и Windows SDK. Результаты сборки находятся в `build`.
+`run.ps1` builds and launches the application. `-BuildOnly` builds without launching;
+`-Test` runs tests. `-VfsPath` and `-ScriptPath` pass the corresponding launch options.
+The helper runs from the project root, so relative paths passed to it are project-relative.
+Build outputs are stored in `build` and ignored by Git.
 
-## Примеры использования
+MSVC users can run `run.bat` or `run.bat test` from the x64 Native Tools Command Prompt
+with the C++ build tools and Windows SDK installed.
 
-В окне ввести `ls`, `ls -l /home`, `cd /tmp`, неизвестную команду `unknown`,
-затем `exit now` и снова `ls`. Ошибки не завершают сеанс.
-Пустая строка не выполняет команду. `exit` закрывает окно.
+## Usage examples
 
-
-Проверка всех режимов параметров и ошибок запуска в PowerShell:
+Enter `ls`, `ls -l /home`, `cd /tmp`, `unknown`, `exit now`, then `ls`.
+The errors must not prevent the final command from running. Enter `exit` to close the window.
 
 ```powershell
-.\scripts\check-parameters.ps1
-.\scripts\check-errors.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-parameters.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-errors.ps1
 ```
 
-Скрипты последовательно открывают окна. Для перехода к следующему примеру
-закройте текущее окно. Проверяются отсутствие параметров, каждый параметр отдельно,
-оба параметра, пути с пробелами, отсутствующий файл, ошибки команд,
-`exit` в скрипте, пропущенные значения, повторный и неизвестный параметр.
-В примере с `errors.txt` после ошибок должны выполниться `cd /tmp` и `ls -l`.
-В примере с `exit.txt` строка `unknown` выполняться не должна.
-
-Тесты `check_config` проверяют корректные и ошибочные параметры,
-`check_script` — порядок выполнения, BOM, переносы строк, ошибки и выход.
-`capture` собирает вывод для проверки. Тестовый `main` запускает эти проверки.
+These demonstration scripts open windows sequentially. Close each window to continue.
+The older stage-2 examples use `C:\VFS folder`; that directory must exist for successful VFS loading.

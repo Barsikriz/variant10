@@ -4,11 +4,13 @@
 #include <shellapi.h>
 #include "config.h"
 #include "script.h"
+#include "vfs.h"
 #include <stdlib.h>
 #include <wchar.h>
 #include "shell.h"
 
 enum { INPUT_ID = 101, RUN_ID = 102, MARGIN = 10, INPUT_HEIGHT = 28 };
+static Vfs virtual_fs;
 static HWND output_window;
 static HWND input_window;
 static HWND run_button;
@@ -141,6 +143,7 @@ static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LP
         }
         return 0;
     case WM_DESTROY:
+        vfs_free(&virtual_fs);
         PostQuitMessage(0);
         return 0;
     default:
@@ -193,6 +196,17 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
         return EXIT_FAILURE;
     }
     show_config(&config);
+    wchar_t vfs_error[256];
+    if (!vfs_load(&virtual_fs, config.vfs_path, vfs_error, 256)) {
+        show_error(window, vfs_error);
+        LocalFree(argv);
+        DestroyWindow(window);
+        return EXIT_FAILURE;
+    }
+    wchar_t summary[128];
+    swprintf(summary, 128, L"[vfs] Loaded %zu nodes, %zu bytes into memory.\r\n",
+        virtual_fs.count, virtual_fs.bytes);
+    append_output(summary);
     ShowWindow(window, show);
     UpdateWindow(window);
     ShellResult script_result = config.script_path
