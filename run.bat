@@ -9,7 +9,7 @@ if not "%~1"=="" (
 )
 cl /nologo /std:c11 /utf-8 /W4 /WX /DUNICODE /D_UNICODE /D_CRT_SECURE_NO_WARNINGS /Isrc ^
     src\main.c src\shell.c src\config.c src\script.c src\script_file.c ^
-    src\vfs.c src\vfs_windows.c /Fe:build\emulator.exe /Fo:build\ ^
+    src\vfs.c src\vfs_windows.c src\motd.c /Fe:build\emulator.exe /Fo:build\ ^
     /link /SUBSYSTEM:WINDOWS user32.lib gdi32.lib advapi32.lib shell32.lib
 if errorlevel 1 exit /b 1
 start "" /wait build\emulator.exe

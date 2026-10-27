@@ -5,6 +5,7 @@
 #include "config.h"
 #include "script.h"
 #include "vfs.h"
+#include "motd.h"
 #include <stdlib.h>
 #include <wchar.h>
 #include "shell.h"
@@ -207,6 +208,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
     swprintf(summary, 128, L"[vfs] Loaded %zu nodes, %zu bytes into memory.\r\n",
         virtual_fs.count, virtual_fs.bytes);
     append_output(summary);
+    vfs_show_motd(&virtual_fs, append_output);
     ShowWindow(window, show);
     UpdateWindow(window);
     ShellResult script_result = config.script_path

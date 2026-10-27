@@ -38,6 +38,12 @@ Invalid commands report a line number and are skipped; following commands still 
 the interactive session remains available. Comments are not supported.
 Script files must contain no NUL bytes and must not exceed 16 MiB.
 
+The root file `motd`, when present, is displayed from memory before the startup script.
+It must be UTF-8 text, optionally with a BOM, and contain no NUL bytes.
+A missing or empty `motd` produces no message. A directory named `motd` or invalid text
+produces a nonfatal error; the startup script and interactive session remain available.
+`vfs_show_motd` looks up `/motd` in memory, decodes UTF-8 and normalizes line endings for the GUI.
+
 ### VFS
 
 The source directory is read once at startup. Directory names, virtual paths and all file bytes
