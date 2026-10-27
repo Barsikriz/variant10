@@ -25,4 +25,17 @@ cl /nologo /std:c11 /utf-8 /W4 /WX /D_CRT_SECURE_NO_WARNINGS /Isrc ^
     /Fe:build\test_config_script.exe /Fo:build\
 if errorlevel 1 exit /b 1
 build\test_config_script.exe
+if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /utf-8 /W4 /WX /D_CRT_SECURE_NO_WARNINGS /Isrc ^
+    tests\test_vfs.c src\vfs.c /Fe:build\test_vfs.exe /Fo:build\
+if errorlevel 1 exit /b 1
+build\test_vfs.exe
+if errorlevel 1 exit /b 1
+powershell -ExecutionPolicy Bypass -File scripts\create-vfs.ps1
+if errorlevel 1 exit /b 1
+cl /nologo /std:c11 /utf-8 /W4 /WX /D_CRT_SECURE_NO_WARNINGS /Isrc ^
+    tests\test_vfs_windows.c src\vfs.c src\vfs_windows.c src\motd.c ^
+    /Fe:build\test_vfs_windows.exe /Fo:build\
+if errorlevel 1 exit /b 1
+build\test_vfs_windows.exe
 exit /b %errorlevel%

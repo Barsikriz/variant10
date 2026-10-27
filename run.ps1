@@ -18,6 +18,16 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Config test build failed.' }
         & .\build\test_config_script.exe
         if ($LASTEXITCODE -ne 0) { throw 'Config tests failed.' }
+        & gcc -std=c11 -Wall -Wextra -Werror -Isrc tests/test_vfs.c src/vfs.c -o build/test_vfs.exe
+        if ($LASTEXITCODE -ne 0) { throw 'VFS test build failed.' }
+        & .\build\test_vfs.exe
+        if ($LASTEXITCODE -ne 0) { throw 'VFS tests failed.' }
+        & .\scripts\create-vfs.ps1
+        & gcc -std=c11 -Wall -Wextra -Werror -Isrc tests/test_vfs_windows.c `
+            src/vfs.c src/vfs_windows.c src/motd.c -o build/test_vfs_windows.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Windows VFS test build failed.' }
+        & .\build\test_vfs_windows.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Windows VFS tests failed.' }
     } else {
         & gcc -std=c11 -Wall -Wextra -Werror -DUNICODE -D_UNICODE -municode -mwindows `
             src/main.c src/shell.c src/config.c src/script.c src/script_file.c `

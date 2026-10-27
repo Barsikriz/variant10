@@ -114,4 +114,33 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-errors.ps1
 ```
 
 These demonstration scripts open windows sequentially. Close each window to continue.
-The older stage-2 examples use `C:\VFS folder`; that directory must exist for successful VFS loading.
+The demonstration scripts generate their own VFS directories under `build/vfs`.
+
+### Stage 3 demonstration
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-vfs.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-vfs-errors.ps1
+```
+
+Both scripts exercise an empty directory, a directory containing several files (including binary data),
+and a tree with three nested directory levels. The error script also checks a missing source,
+a file used as a directory, invalid `motd` text and `exit` inside a startup script.
+`create-vfs.ps1` creates test data under `build/vfs`; it is a fixture generator, separate from the emulator.
+`stage3.txt` demonstrates all current commands, arguments, blank input and error recovery.
+`exit.txt` tests termination. Since `cd` is still a stub, `cd /missing` only echoes its arguments.
+
+To start one case manually:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create-vfs.ps1
+.\build\emulator.exe --vfs "build/vfs/deep" --script "tests/fixtures/stage3.txt"
+```
+
+The startup order is settings, VFS statistics, root `motd`, then script commands.
+After the script, enter `exit` to close the window.
+
+The test suite covers commands, configuration, scripts, memory ownership, binary content,
+empty files and directories, nested loading, failed-load rollback and `motd` decoding.
+`capture_motd` collects messages for the Windows-specific assertions.
+Windows loader and `motd` tests require Windows; memory tests use standard C only.

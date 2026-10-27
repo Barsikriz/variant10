@@ -1,0 +1,9 @@
+ls
+ls -l /
+cd /level1/level2/level3
+ls data.txt
+cd /missing
+unknown
+exit now
+
+ls
